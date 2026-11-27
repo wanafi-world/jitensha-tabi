@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>じてんしゃ旅</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-screen="title">
+  <header class="topbar">
+    <h1>じてんしゃ旅</h1>
+    <span class="money">所持金 <b id="money">¥0</b></span>
+  </header>
+
+  <main class="layout">
+    <section class="stage">
+      <canvas id="scene" width="320" height="180" aria-label="自転車の組み立て画面"></canvas>
+      <div id="toast" class="toast" role="status"></div>
+
+      <div class="title-overlay">
+        <p class="lead">自転車を組んで、服を選んで、<br />日本の道へ。</p>
+        <button id="start" class="big">はじめる</button>
+      </div>
+    </section>
+
+    <section class="panel edit-panel">
+      <h2 class="screen-title">
+        <span class="when-assemble">組み立て</span><span class="when-outfit">服をえらぶ</span>
+      </h2>
+      <p class="tip when-assemble">自転車の部分をタップするか、タブを選んでパーツを付け替えよう。</p>
+      <div id="tabs" class="tabs"></div>
+      <ul id="items" class="items"></ul>
+      <div class="row">
+        <button id="remove" class="sub">外す</button>
+        <span id="weight" class="weight"></span>
+      </div>
+      <div id="stats" class="stats"></div>
+      <p id="hint" class="hint"></p>
+      <div class="row nav">
+        <button id="back" class="sub" hidden>◀ もどる</button>
+        <button id="next" class="big">服をえらぶ ▶</button>
+      </div>
+      <button id="reset" class="link">セーブを消して最初から</button>
+    </section>
+
+    <section class="panel route-panel">
+      <h2 class="screen-title">ルートをえらぶ</h2>
+      <p class="tip">走行画面はステップ2でつくります。最初はしまなみ海道から。</p>
+      <ul class="routes">
+        <li><b>しまなみ海道</b><span>尾道 → 今治・約70km・直進（往復／輪行）</span></li>
+        <li><b>ビワイチ</b><span>琵琶湖一周・約200km・周回</span></li>
+        <li><b>つくば霞ヶ浦りんりんロード</b><span>霞ヶ浦一周・約90km・周回</span></li>
+        <li><b>富士五湖めぐり</b><span>五湖をつなぐ・約100km・周回</span></li>
+        <li><b>東京 → 箱根</b><span>国道1号・約90km・直進（往復／輪行）</span></li>
+      </ul>
+      <button id="route-back" class="sub">◀ もどる</button>
+    </section>
+  </main>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
