@@ -83,6 +83,7 @@ export class Ride {
   slopeNow() {
     const i = this.segIndex(), seg = this.segment(), loc = this.local();
     if (seg.kind === "bridge" || seg.kind === "ferry") return 0;
+    if (seg.slope) return seg.slope;
     const next = this.route.segments[i + 1], prev = this.route.segments[i - 1];
     if (next?.kind === "bridge" && seg.km - loc < 1.0) return 1;
     if (prev?.kind === "bridge" && loc < 0.8) return -1;
@@ -143,13 +144,17 @@ export class Ride {
         if (s.kind === "bridge") this.say(`${s.name}をわたる。海の上を走る！`);
         else if (s.kind === "ferry") this.say(`${s.name}に自転車ごと乗りこむ`);
         else if (s.kind === "island") this.say(`${s.name}に上陸`);
+        else if (s.slope > 0) this.say(`${s.name}。ここからのぼり坂が続く`);
+        else if (s.slope < 0) this.say(`${s.name}。気持ちいいくだり坂！`);
+        else if (s.kind === "shore") this.say(`${s.name}。水辺を走る`);
+        else if (s.kind === "field") this.say(`${s.name}。のどかな道`);
         else this.say(`${s.name}に到着`);
       }
       if (this.wind[idx] < 0 && s.kind !== "ferry") this.say("向かい風が強い……");
       if (this.wind[idx] > 0 && s.kind !== "ferry") this.say("追い風で気持ちいい！");
       if (s.shop) this.say(`${s.shop.name}で休憩できる`);
     }
-    if (this.slope > 0 && !this._climbSaid) { this.say("橋へののぼり坂"); this._climbSaid = true; }
+    if (this.slope > 0 && !this._climbSaid) { if (!this.segment().slope) this.say("橋へののぼり坂"); this._climbSaid = true; }
     if (this.slope <= 0) this._climbSaid = false;
     if (this.stamina < 25 && !this.hungryWarned) { this.say("おなかがすいてきた。どこかで休憩しよう"); this.hungryWarned = true; }
     if (this.stamina > 40) this.hungryWarned = false;
@@ -187,7 +192,8 @@ export class Ride {
     this.spent += item.price;
     this.stamina = Math.min(100, this.stamina + item.stamina);
     this.minutes += 10;
-    this.say(`${item.name}を${item.drink ? "飲んだ" : "食べた"}。体力 +${item.stamina}`);
+    this.minutes += item.onsen ? 40 : 0;
+    this.say(item.onsen ? `温泉で疲れがとれた。体力 +${item.stamina}` : `${item.name}を${item.drink ? "飲んだ" : "食べた"}。体力 +${item.stamina}`);
   }
 
   // 撮影の結果。quality は 0〜1（シャッターのタイミング）

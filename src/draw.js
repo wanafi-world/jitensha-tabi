@@ -14,8 +14,8 @@ export const BIKE_OX_ALONE = 26; // 自転車だけのとき中央に寄せる
 export const BIKE_OX_RIDER = -6; // 人と並ぶとき
 
 // 太いフレーム（カーボンや極太アルミ）とラグ付きのクロモリ
-const FAT = new Set(["tarmac", "domane", "caad13"]);
-const LUGGED = new Set(["surly-lht"]);
+const FAT = new Set(["tarmac", "domane", "caad13", "cervelo-s5", "diverge"]);
+const LUGGED = new Set(["surly-lht", "colnago-master", "panasonic-order", "gios-siero"]);
 
 // 自転車の骨格。実車の寸法比（ホイール径 680mm ≒ 76px）から決めている。
 export function geometry(ox = 0, oy = 0) {
