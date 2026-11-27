@@ -302,4 +302,4 @@ document.fonts?.load('8px "DotGothic16"').finally(() => requestAnimationFrame(fr
 setScreen("title");
 
 // 確認用（ブラウザのコンソールから触れる）
-window.jitensha = { rideScreen, jobScreen, store, getState: () => state };
+window.jitensha = { rideScreen, jobScreen, store, startRide, getState: () => state, routes: { routeById }, stats: () => computeStats(state.bike, state.outfit) };

@@ -112,15 +112,49 @@ function drawSea(p, h, d, t) {
   }
 }
 
-function drawFarIslands(p, h, d) {
+const dayPick = (h, day, eve, night) => (h >= 7 && h < 17 ? day : h < 19 && h >= 5.5 ? eve : night);
+
+function drawFar(p, h, d, far = "islands") {
+  const base = dayPick(h, "#7ba3b8", "#8a7aa0", "#1f2a48");
+  const near = dayPick(h, "#5f8fa0", "#6a5a80", "#18203a");
   const off = d * PX_PER_KM * 0.05;
-  const base = h >= 7 && h < 17 ? "#7ba3b8" : h < 19 && h >= 5.5 ? "#8a7aa0" : "#1f2a48";
-  const near = h >= 7 && h < 17 ? "#5f8fa0" : h < 19 && h >= 5.5 ? "#6a5a80" : "#18203a";
+  const tall = far === "mountains" || far === "fuji";
+  // 奥の山並み（島なら低く途切れる、山なら高く連なる）
   for (let sx = 0; sx < RW; sx++) {
-    const wx = (sx + off) / 70;
+    const wx = (sx + off) / (tall ? 90 : 70);
     const n = noise(wx) * 0.7 + noise(wx * 2.3) * 0.3;
-    const hgt = Math.max(0, (n - 0.42) * 70);
+    const hgt = tall ? 18 + n * 70 : Math.max(0, (n - 0.42) * 70);
     if (hgt > 0) p.rect(sx, HORIZON - hgt, 1, hgt + 1, base);
+    if (tall && n > 0.72 && h >= 5.5 && h < 19) p.rect(sx, HORIZON - hgt, 1, 2, shade(base, 0.35));
+  }
+  // 富士山：湖をめぐるにつれて少しずつ見える位置が変わる
+  if (far === "fuji") {
+    const cx = Math.round(250 + Math.sin(d / 14) * 120);
+    const top = 24, baseY = HORIZON + 4, half = 200;
+    const body = dayPick(h, "#5a7ea8", "#6a5a90", "#1a2448");
+    const snow = dayPick(h, "#f6f8fc", "#ffd8c8", "#8a94b8");
+    for (let i = -half; i <= half; i++) {
+      const t = Math.abs(i) / half;
+      // すそが広がる曲線
+      const y = top + (baseY - top) * Math.pow(t, 0.75) + (Math.abs(i) < 9 ? 0 : 0);
+      const x = cx + i;
+      if (x < 0 || x >= RW) continue;
+      p.rect(x, y, 1, baseY - y, i < 0 ? shade(body, 0.08) : body);
+      // 雪：ぎざぎざに溶ける
+      const sd = 30 + Math.sin(i * 0.9) * 4 + Math.sin(i * 0.31) * 6 - t * 6;
+      if (y < top + sd) p.rect(x, y, 1, top + sd - y, i < 0 ? snow : shade(snow, -0.08));
+    }
+    p.rect(cx - 9, top, 18, 2, shade(snow, -0.15)); // 火口のくぼみ
+  }
+  // 筑波山：ふたこぶの山
+  if (far === "tsukuba") {
+    const cx = ((380 - d * PX_PER_KM * 0.02) % (RW + 300) + RW + 300) % (RW + 300) - 150;
+    const body = dayPick(h, "#5f8a9a", "#6a5a80", "#18203a");
+    for (let i = -110; i < 110; i++) {
+      // 女体山と男体山のふたつの峰
+      const hgt = Math.max(0, 34 - Math.abs(i) * 0.3, 58 - Math.abs(i + 16) * 1.1, 62 - Math.abs(i - 16) * 1.1);
+      if (hgt > 0) p.rect(cx + i, HORIZON - hgt + 2, 1, hgt, body);
+    }
   }
   const off2 = d * PX_PER_KM * 0.12;
   for (let sx = 0; sx < RW; sx++) {
@@ -135,16 +169,50 @@ function drawFarIslands(p, h, d) {
 
 function drawHills(p, h, d, segAt) {
   const f = 0.35;
-  const g1 = h >= 7 && h < 17 ? "#5f9a5a" : h < 19 && h >= 5.5 ? "#5a7a4a" : "#1f3328";
+  const g1 = dayPick(h, "#5f9a5a", "#5a7a4a", "#1f3328");
   const g2 = shade(g1, -0.18);
+  const forest = dayPick(h, "#3f7a4a", "#3f5a3a", "#16261e");
+  const paddy = dayPick(h, "#8cc06a", "#8a9a5a", "#22331e");
+  const concrete = dayPick(h, "#a8a8a0", "#9a8a90", "#2a2a38");
   for (let sx = 0; sx < RW; sx += 1) {
     const km = d + (sx - BIKE_X) / (PX_PER_KM * f);
     const seg = segAt(km);
     if (!seg || seg.kind === "bridge" || seg.kind === "ferry") continue;
-    // 区間の端ほど低くして海岸線にする
     const edge = Math.min(seg._local, seg.km - seg._local);
     const fall = Math.min(1, edge / 0.6);
     const n = noise(km * 3) * 0.6 + noise(km * 9) * 0.4;
+    if (seg.kind === "shore") {
+      // 岸辺：低い草地だけで、水がよく見える
+      const hgt = 4 + n * 6;
+      p.rect(sx, ROAD_Y - 8 - hgt, 1, hgt + 8, g1);
+      continue;
+    }
+    if (seg.kind === "field" || seg.kind === "city") {
+      // 内陸：水面のかわりに田んぼや街並み
+      const top = HORIZON + 4;
+      const ground = seg.kind === "field" ? paddy : concrete;
+      p.rect(sx, top, 1, ROAD_Y - top, ground);
+      if (seg.kind === "field") {
+        for (let y = top + 6; y < ROAD_Y; y += 7 + Math.floor((y - top) / 12)) p.px(sx, y, shade(paddy, -0.2)); // あぜ
+        const hgt = (10 + n * 26) * fall;
+        p.rect(sx, top - hgt, 1, hgt, g1);
+      } else {
+        // 遠くのビル
+        const col = Math.floor((km * 300) / 9);
+        const bh = 20 + hash(col) * 60;
+        p.rect(sx, top - bh + 30, 1, bh, shade(concrete, -0.15 - hash(col + 1) * 0.15));
+        if (Math.floor(km * 300) % 3 === 0 && (top - bh + 34) % 6 < 3) for (let y = top - bh + 34; y < top + 26; y += 6) p.px(sx, y, h > 18 || h < 6 ? "#ffd870" : "#c8d8e0");
+      }
+      continue;
+    }
+    if (seg.kind === "climb") {
+      // 山道：森が近くまで迫る（区間の端はなだらかに）
+      const hgt = (40 + n * 60) * fall + 8;
+      p.rect(sx, ROAD_Y - hgt, 1, hgt, shade(forest, (Math.floor(km * 300) % 5 === 0) ? -0.15 : 0));
+      if ((sx + Math.floor(km * 300)) % 4 === 0) p.px(sx, ROAD_Y - hgt, shade(forest, 0.25));
+      continue;
+    }
+    // 島や街：区間の端ほど低くして海岸線にする
     const hgt = (24 + n * 56) * fall;
     if (hgt < 1) continue;
     p.rect(sx, ROAD_Y - 22 - hgt, 1, hgt + 22, g1);
@@ -223,7 +291,87 @@ function towelShop(p, x, y) {
   for (let i = 0; i < 4; i++) p.rect(x + 4 + i * 10, y - 24, 7, 12, cols[i]);
 }
 
-const OBJECTS = { houses: house, citrus: (p, x, y, s) => citrus(p, x, y, s, "#f29a1a"), lemon: (p, x, y, s) => citrus(p, x, y, s, "#f2e23a"), crane, torii, salt: saltPile, beach, temple, towel: towelShop };
+function pine(p, x, y, seed) {
+  const lean = hash(seed) < 0.5 ? -1 : 1;
+  p.line(x + 6, y, x + 6 + lean * 4, y - 26, "#5a3a22", 3);
+  for (const [dx, dy, w] of [[-4, -26, 22], [2, -34, 16], [-8, -20, 14]]) {
+    p.rect(x + dx + lean * 4, y + dy, w, 4, "#2f5f3a");
+    p.rect(x + dx + lean * 4 + 2, y + dy - 2, w - 4, 2, "#3f7a4a");
+  }
+}
+
+function reeds(p, x, y, seed) {
+  for (let i = 0; i < 12; i++) {
+    const hgt = 10 + hash(seed + i) * 12;
+    p.line(x + i * 3, y, x + i * 3 + 2, y - hgt, "#a8a060");
+    p.rect(x + i * 3 + 1, y - hgt - 2, 2, 4, "#c8b880");
+  }
+}
+
+function lotus(p, x, y, seed) {
+  p.rect(x - 4, y - 4, 52, 4, "#5a8a8a");
+  for (let i = 0; i < 7; i++) {
+    const lx = x + hash(seed + i) * 44, ly = y - 6 - hash(seed + i + 3) * 8;
+    p.line(lx + 3, y - 2, lx + 3, ly, "#4a7a3a");
+    p.rect(lx, ly - 2, 8, 3, "#4f9a48");
+    if (i % 3 === 0) { p.rect(lx + 2, ly - 6, 4, 4, "#f2a8c8"); p.px(lx + 3, ly - 6, "#ffffff"); }
+  }
+}
+
+function buildings(p, x, y, seed, night) {
+  const w = 30 + hash(seed) * 20, hh = 50 + hash(seed + 1) * 60;
+  const wall = ["#c8c4b8", "#a8b0b8", "#d8cfc0", "#b8a898"][Math.floor(hash(seed + 2) * 4)];
+  p.rect(x, y - hh, w, hh, wall);
+  p.rect(x + w - 4, y - hh, 4, hh, shade(wall, -0.18));
+  p.rect(x, y - hh, w, 2, shade(wall, 0.2));
+  for (let wy = y - hh + 6; wy < y - 10; wy += 8) for (let wx = x + 4; wx < x + w - 8; wx += 7)
+    p.rect(wx, wy, 4, 4, night && hash(wx * 3 + wy) > 0.4 ? "#ffd870" : "#5a7a8a");
+  p.rect(x + w / 2 - 5, y - 10, 10, 10, "#3a3a3a");
+}
+
+function sakura(p, x, y, seed) {
+  p.rect(x + 6, y - 12, 3, 12, "#5a3a22");
+  p.disc(x + 7, y - 20, 11, "#f6c8d8");
+  p.disc(x + 3, y - 22, 6, "#fadbe6");
+  for (let i = 0; i < 5; i++) p.px(x + hash(seed + i) * 20, y - 6 + hash(seed + i + 1) * 6, "#f6c8d8");
+}
+
+function metasequoia(p, x, y) {
+  for (const dx of [0, 24]) {
+    p.rect(x + dx + 6, y - 10, 3, 10, "#5a3a22");
+    for (let i = 0; i < 40; i++) {
+      const w = Math.max(1, Math.floor(i / 3));
+      p.rect(x + dx + 7 - w, y - 50 + i, w * 2 + 1, 1, i % 4 ? "#5a8a3a" : "#4a7a32");
+    }
+  }
+}
+
+function lavender(p, x, y, seed) {
+  for (let i = 0; i < 8; i++) {
+    const lx = x + i * 5;
+    p.rect(lx, y - 8, 4, 8, "#5a7a4a");
+    p.rect(lx, y - 12 - hash(seed + i) * 3, 4, 5, "#9a7ad8");
+  }
+}
+
+function forestTree(p, x, y, seed) {
+  const hgt = 36 + hash(seed) * 20;
+  p.rect(x + 7, y - 8, 3, 8, "#4a3020");
+  for (let i = 0; i < hgt; i++) {
+    const w = Math.floor((i / hgt) * 10) + 1;
+    p.rect(x + 8 - w, y - 8 - hgt + i, w * 2, 1, i % 5 ? "#2f5f3a" : "#3f7a4a");
+  }
+}
+
+function onsen(p, x, y) {
+  p.rect(x, y - 26, 40, 26, "#e8dcc4");
+  for (let i = 0; i < 6; i++) p.rect(x - 4 + i, y - 32 + i, 48 - i * 2, 1, "#3c4a5a");
+  p.rect(x + 10, y - 20, 20, 14, "#2f5f9a"); // のれん
+  p.text("♨", x + 14, y - 20, "#ffffff", 12);
+  for (let i = 0; i < 3; i++) p.rect(x + 8 + i * 10, y - 44 + Math.sin(i) * 2, 2, 8, "rgba(255,255,255,0.7)");
+}
+
+const OBJECTS = { pine, reeds, lotus, buildings, sakura, metasequoia, lavender, forest: forestTree, onsen, houses: house, citrus: (p, x, y, s) => citrus(p, x, y, s, "#f29a1a"), lemon: (p, x, y, s) => citrus(p, x, y, s, "#f2e23a"), crane, torii, salt: saltPile, beach, temple, towel: towelShop };
 
 function drawRoadside(p, h, d, segAt) {
   const night = h < 5.5 || h > 18.7;
@@ -234,24 +382,26 @@ function drawRoadside(p, h, d, segAt) {
     const sx = k * slot - d * PX_PER_KM + BIKE_X;
     const km = (k * slot) / PX_PER_KM;
     const seg = segAt(km);
-    if (!seg || !seg.scenery || hash(k) < 0.35) continue;
+    const dense = seg && seg.scenery && (seg.scenery[0] === "forest" || seg.scenery[0] === "metasequoia" || seg.scenery[0] === "buildings");
+    if (!seg || !seg.scenery || hash(k) < (dense ? 0.05 : 0.35)) continue;
     if (Math.min(seg._local, seg.km - seg._local) < 0.15) continue;
     const kind = seg.scenery[Math.floor(hash(k + 0.5) * seg.scenery.length)];
-    if ((kind === "crane" || kind === "torii" || kind === "temple") && hash(k + 2) < 0.75) continue;
+    if ((kind === "crane" || kind === "torii" || kind === "temple" || kind === "onsen") && hash(k + 2) < 0.75) continue;
     OBJECTS[kind](p, sx, ROAD_Y - 4, k, night);
   }
 }
 
 // ---------- 道と橋 ----------
 
-function drawLandRoad(p, x0, x1, h) {
+function drawLandRoad(p, x0, x1, h, blue = true) {
   if (x1 <= 0 || x0 >= RW) return;
   x0 = Math.max(0, Math.floor(x0)); x1 = Math.min(RW, Math.ceil(x1));
   const w = x1 - x0;
   p.rect(x0, ROAD_Y - 6, w, 6, "#6a9a4a"); // 草
   p.rect(x0, ROAD_Y, w, RH - ROAD_Y, "#5a5a62"); // 道
   p.rect(x0, ROAD_Y, w, 1, "#8a8a92");
-  p.rect(x0, ROAD_Y + 18, w, 2, "#2f7fd8"); // しまなみのブルーライン
+  if (blue) p.rect(x0, ROAD_Y + 18, w, 2, "#2f7fd8"); // 自転車道のブルーライン
+  else p.rect(x0, ROAD_Y + 18, w, 1, "#e8e8e8"); // 白線
   p.rect(x0, RH - 6, w, 6, "#4a4a52");
 }
 
@@ -375,6 +525,56 @@ function drawFerry(p, t) {
   for (let i = 0; i < 6; i++) p.rect(BIKE_X - 74 - ((t / 40 + i * 7) % 30), y + 26 + (i % 3), 4, 1, "#ffffff");
 }
 
+// ---------- 名所 ----------
+
+function drawLandmark(p, type, x, h) {
+  if (x < -140 || x > RW + 140) return;
+  const water = ROAD_Y - 30;
+  if (type === "lakeTorii") {
+    // 湖の中に立つ朱色の鳥居
+    const c = "#d4402e", y = water + 4;
+    p.rect(x - 22, y - 58, 6, 58, c); p.rect(x + 16, y - 58, 6, 58, c);
+    p.rect(x - 32, y - 66, 64, 5, "#2a2a2a");
+    p.rect(x - 30, y - 61, 60, 3, c);
+    p.rect(x - 26, y - 50, 52, 4, c);
+    p.rect(x - 4, y - 61, 8, 11, c);
+    for (let i = 0; i < 4; i++) p.rect(x - 26 + i * 12, y + 2 + (i % 2), 10, 1, "rgba(212,64,46,0.5)"); // 水面に映る
+  } else if (type === "castle") {
+    const y = ROAD_Y - 40;
+    p.rect(x - 50, y + 10, 100, 30, "#8a8a80"); // 石垣
+    for (let i = 0; i < 8; i++) p.rect(x - 50 + i * 13, y + 10 + (i % 2) * 8, 12, 1, "#6a6a60");
+    const tier = (w, yy) => {
+      p.rect(x - w / 2, yy, w, 14, "#f6f2e8");
+      p.rect(x - w / 2 - 6, yy - 4, w + 12, 4, "#3a4a5a");
+      p.rect(x - w / 2 - 2, yy - 6, w + 4, 2, "#4a5a6a");
+      for (let k = -w / 2 + 4; k < w / 2 - 4; k += 8) p.rect(x + k, yy + 4, 3, 4, "#3a3a3a");
+    };
+    tier(70, y - 4); tier(52, y - 22); tier(34, y - 40);
+    p.rect(x - 20, y - 50, 40, 4, "#3a4a5a");
+    p.rect(x - 22, y - 54, 4, 4, "#d8b24c"); p.rect(x + 18, y - 54, 4, 4, "#d8b24c"); // しゃちほこ
+  } else if (type === "sailboat") {
+    // 霞ヶ浦の帆引き船：大きな白い帆
+    const y = water;
+    p.rect(x - 30, y, 60, 6, "#5a3a22");
+    p.rect(x - 26, y + 6, 52, 2, "#3a2a1a");
+    p.rect(x - 1, y - 70, 2, 70, "#5a3a22");
+    for (let i = 0; i < 62; i++) {
+      const w = 20 + Math.sin((i / 62) * Math.PI) * 30;
+      p.rect(x - w, y - 68 + i, w * 2, 1, i % 12 === 0 ? "#d8d4c8" : "#f6f4ee");
+    }
+    p.rect(x - 50, y - 68, 100, 1, "#5a3a22");
+  } else if (type === "enoshima") {
+    const y = HORIZON + 10;
+    const c = dayPick(h, "#4f8a5a", "#4a5a4a", "#16261e");
+    for (let i = -60; i < 60; i++) {
+      const hgt = Math.max(0, 30 - (i * i) / 120);
+      p.rect(x + i, y - hgt, 1, hgt, c);
+    }
+    p.rect(x + 4, y - 50, 4, 22, "#e8e8e8"); // 展望灯台
+    p.rect(x + 1, y - 52, 10, 4, "#c8c8c8");
+  }
+}
+
 // ---------- 全体 ----------
 
 export function drawRideScene(p, ride, t) {
@@ -384,7 +584,7 @@ export function drawRideScene(p, ride, t) {
 
   drawSky(p, h, d, t);
   drawSea(p, h, d, t);
-  drawFarIslands(p, h, d);
+  drawFar(p, h, d, ride.route.far);
   drawHills(p, h, d, segAt);
 
   // 画面に見えている区間ごとに道や橋を描く
@@ -393,12 +593,13 @@ export function drawRideScene(p, ride, t) {
   for (const s of visible) {
     const x0 = BIKE_X + (s.start - d) * PX_PER_KM, x1 = BIKE_X + (s.start + s.seg.km - d) * PX_PER_KM;
     if (s.seg.kind === "bridge") drawBridgeStructure(p, s.seg, x0, x1, s.seg.bridge.color);
+    if (s.seg.landmark) drawLandmark(p, s.seg.landmark.type, x0 + (x1 - x0) * s.seg.landmark.at, h);
   }
   drawRoadside(p, h, d, segAt);
   for (const s of visible) {
     const x0 = BIKE_X + (s.start - d) * PX_PER_KM, x1 = BIKE_X + (s.start + s.seg.km - d) * PX_PER_KM;
     if (s.seg.kind === "bridge") drawDeck(p, x0, x1, s.seg.bridge.color, d);
-    else if (s.seg.kind !== "ferry") { drawLandRoad(p, x0, x1, h); drawGuardrail(p, x0, x1, d); }
+    else if (s.seg.kind !== "ferry") { drawLandRoad(p, x0, x1, h, ride.route.blueLine); if (s.seg.kind !== "city") drawGuardrail(p, x0, x1, d); }
   }
   for (const s of visible) {
     const x0 = BIKE_X + (s.start - d) * PX_PER_KM;

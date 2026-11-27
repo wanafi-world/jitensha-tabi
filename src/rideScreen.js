@@ -45,6 +45,13 @@ export class RideScreen {
       b.onclick = () => { if (this.ride) { this.ride.mode = id; this.renderModes(); } };
       modes.appendChild(b);
     }
+    // 早送り（長いルート向け）
+    this.ff = 1;
+    const ff = document.createElement("button");
+    ff.className = "sub mode ff";
+    ff.id = "r-ff";
+    ff.onclick = () => { this.ff = this.ff >= 3 ? 1 : this.ff + 1; this.renderModes(); };
+    modes.appendChild(ff);
   }
 
   start(route, stats) {
@@ -74,7 +81,11 @@ export class RideScreen {
   }
 
   renderModes() {
-    for (const b of document.querySelectorAll("#r-modes .mode")) b.classList.toggle("active", b.dataset.mode === this.ride.mode);
+    for (const b of document.querySelectorAll("#r-modes .mode")) if (b.dataset.mode) b.classList.toggle("active", b.dataset.mode === this.ride.mode);
+    const ff = $("#r-ff");
+    ff.textContent = `▶▶×${this.ff}`;
+    ff.title = "早送り";
+    ff.classList.toggle("active", this.ff > 1);
   }
 
   // ---------- 毎フレーム ----------
@@ -82,7 +93,9 @@ export class RideScreen {
   frame(t, dt) {
     const r = this.ride;
     if (!r) return;
-    r.update(Math.min(dt, 0.1));
+    const step = Math.min(dt, 0.1);
+    // 走っているときだけ早送り。写真やパンクのときは等速
+    for (let i = 0; i < this.ff && (i === 0 || r.status === "riding"); i++) r.update(step);
     const p = this.p;
     drawRideScene(p, r, t);
     const tired = r.stamina < 20;

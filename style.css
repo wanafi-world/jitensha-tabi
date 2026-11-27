@@ -163,6 +163,8 @@ body[data-screen="ride"] .ride-panel { display: block; }
 
 .modes { display: flex; gap: 6px; margin-bottom: 10px; }
 .mode { flex: 1; }
+.mode { white-space: nowrap; padding-left: 4px; padding-right: 4px; min-width: 0; }
+.mode.ff { flex: 0 0 auto; padding-left: 8px; padding-right: 8px; }
 .mode.active { background: var(--ink); color: var(--paper); }
 
 .ride-actions { display: grid; gap: 8px; margin-bottom: 10px; }
