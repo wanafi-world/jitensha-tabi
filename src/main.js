@@ -1,6 +1,6 @@
 import { PART_SLOTS, OUTFIT_SLOTS, ALL_ITEMS, itemById } from "./data.js";
 import { Pixel } from "./pixel.js";
-import { drawBike, drawRider, drawWorkshop, hitPart, geometry } from "./draw.js";
+import { drawBike, drawRider, drawWorkshop, hitPart, slotRegions, GROUND, RIDER_X, BIKE_OX_ALONE, BIKE_OX_RIDER } from "./draw.js";
 import { loadState, saveState, resetState, computeStats, isComplete, STAT_LABELS } from "./state.js";
 
 const canvas = document.getElementById("scene");
@@ -17,22 +17,12 @@ const yen = (n) => "¥" + n.toLocaleString("ja-JP");
 
 // ---------- 描画ループ ----------
 
-function slotRegions(id) {
-  const g = geometry();
-  const box = (c, r) => ({ x: c.x - r, y: c.y - r, w: r * 2, h: r * 2 });
-  switch (id) {
-    case "frame": return [{ x: g.R.x + 2, y: g.ST.y - 3, w: g.HT.x - g.R.x + 4, h: g.BB.y - g.ST.y + 8 }];
-    case "wheels": return [box(g.R, 20), box(g.F, 20)];
-    case "tires": return [box(g.R, 25), box(g.F, 25)];
-    case "group": return [{ x: g.R.x - 6, y: g.BB.y - 10, w: g.BB.x - g.R.x + 17, h: 22 }];
-    case "bar": return [{ x: g.STEM.x - 3, y: g.STEM.y - 5, w: 14, h: 17 }];
-    case "saddle": return [{ x: g.SP.x - 11, y: g.SP.y - 6, w: 20, h: 9 }];
-    default: return [];
-  }
+function bikeOx() {
+  return screen === "outfit" || screen === "route" ? BIKE_OX_RIDER : BIKE_OX_ALONE;
 }
 
 function drawBrackets(r, c) {
-  const L = 3;
+  const L = 5;
   const { x, y, w, h } = r;
   p.rect(x, y, L, 1, c); p.rect(x, y, 1, L, c);
   p.rect(x + w - L, y, L, 1, c); p.rect(x + w - 1, y, 1, L, c);
@@ -43,14 +33,14 @@ function drawBrackets(r, c) {
 function frame(t) {
   drawWorkshop(p, t);
   const showRider = screen === "outfit" || screen === "route";
-  const ox = showRider ? -14 : 0;
+  const ox = bikeOx();
   // タイトル画面ではホイールがゆっくり回る
   const spin = screen === "title" ? t / 900 : 0;
   drawBike(p, state.bike, { ox, spin, crank: screen === "title" ? t / 900 : 0.6 });
-  if (showRider) drawRider(p, state.outfit, 172, 104);
+  if (showRider) drawRider(p, state.outfit, RIDER_X, GROUND);
 
   if (screen === "assemble" && Math.floor(t / 400) % 2 === 0) {
-    for (const r of slotRegions(slot)) drawBrackets(r, "#e8622c");
+    for (const r of slotRegions(slot, ox)) drawBrackets(r, "#e8622c");
   }
 
   // パーツを付けたときの火花
@@ -64,7 +54,7 @@ function frame(t) {
 
 function burst(regions, colors) {
   for (const r of regions) {
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 28; i++) {
       particles.push({
         x: r.x + Math.random() * r.w, y: r.y + Math.random() * r.h,
         vx: (Math.random() - 0.5) * 1.6, vy: -Math.random() * 1.6,
@@ -167,10 +157,10 @@ function equip(it, owned) {
   if (map[slot] === it.id) return;
   map[slot] = it.id;
   if (screen === "assemble") {
-    burst(slotRegions(slot), ["#ffe27a", "#ffffff", "#e8622c"]);
+    burst(slotRegions(slot, bikeOx()), ["#ffe27a", "#ffffff", "#e8622c"]);
     toast("カチッ！");
   } else {
-    burst([{ x: 162, y: 50, w: 20, h: 54 }], ["#ffe27a", "#ffffff", "#d8417a"]);
+    burst([{ x: RIDER_X - 16, y: GROUND - 110, w: 32, h: 110 }], ["#ffe27a", "#ffffff", "#d8417a"]);
   }
   render();
 }
@@ -197,7 +187,7 @@ canvas.addEventListener("pointerdown", (e) => {
   const r = canvas.getBoundingClientRect();
   const x = ((e.clientX - r.left) / r.width) * canvas.width;
   const y = ((e.clientY - r.top) / r.height) * canvas.height;
-  const hit = hitPart(x, y);
+  const hit = hitPart(x, y, bikeOx());
   if (hit) { slot = hit; render(); }
 });
 

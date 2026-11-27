@@ -41,7 +41,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 @media (max-width: 760px) { .stage { position: sticky; top: 0; z-index: 2; background: var(--bg); padding-top: 4px; margin-top: -4px; } }
 
 #scene {
-  display: block; width: 100%; height: auto; aspect-ratio: 192 / 112;
+  display: block; width: 100%; height: auto; aspect-ratio: 320 / 180;
   image-rendering: pixelated; image-rendering: crisp-edges;
   border: 3px solid var(--line); background: #e9dcc0; touch-action: manipulation;
 }
