@@ -8,14 +8,19 @@ export function loadState() {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const s = JSON.parse(raw);
-      if (s && s.bike && s.outfit && Array.isArray(s.owned)) return s;
+      if (s && s.bike && s.outfit && Array.isArray(s.owned)) return { ...structuredClone(STARTER), ...s };
     }
   } catch (_) { /* 保存できない環境でも遊べるようにする */ }
   return structuredClone(STARTER);
 }
 
 export function saveState(s) {
-  try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (_) { /* noop */ }
+  try {
+    localStorage.setItem(KEY, JSON.stringify(s));
+  } catch (_) {
+    // 容量オーバーのときは古い写真を減らしてもう一度
+    try { s.posts = s.posts.slice(0, 6); localStorage.setItem(KEY, JSON.stringify(s)); } catch (_) { /* noop */ }
+  }
 }
 
 export function resetState() {

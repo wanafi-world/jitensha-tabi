@@ -14,6 +14,15 @@
     <h1>じてんしゃ旅</h1>
     <span class="money">所持金 <b id="money">¥0</b></span>
   </header>
+  <nav id="nav" class="nav-bar">
+    <button data-go="assemble">🔧 組み立て</button>
+    <button data-go="outfit">👕 服</button>
+    <button data-go="shop">🏪 ショップ</button>
+    <button data-go="recycle">♻️ リサイクル</button>
+    <button data-go="jobs">💼 バイト</button>
+    <button data-go="sns">📱 SNS</button>
+    <button data-go="route" class="go">🚲 旅に出る</button>
+  </nav>
 
   <main class="layout">
     <section class="stage">
@@ -54,6 +63,36 @@
       <ul id="routes" class="routes"></ul>
       <p id="trip-count" class="tip"></p>
       <button id="route-back" class="sub">◀ もどる</button>
+    </section>
+
+    <section class="panel store-panel">
+      <h2 class="screen-title" id="store-title"></h2>
+      <p class="tip" id="store-tip"></p>
+      <div id="store-tabs" class="tabs"></div>
+      <ul id="store-items" class="items"></ul>
+      <div id="store-compare" class="stats"></div>
+      <button id="store-buy" class="big wide" hidden></button>
+    </section>
+
+    <section class="panel sns-panel">
+      <h2 class="screen-title">SNS</h2>
+      <div id="sns-profile"></div>
+      <div id="sns-timeline" class="photos timeline"></div>
+    </section>
+
+    <section class="panel jobs-panel">
+      <h2 class="screen-title">バイト</h2>
+      <p class="tip">バイトをすると1日進みます（リサイクルショップの品ぞろえが変わります）。</p>
+      <ul id="jobs" class="routes"></ul>
+    </section>
+
+    <section class="panel job-panel">
+      <h2 class="screen-title" id="job-name"></h2>
+      <p id="job-step" class="job-step"></p>
+      <p class="tip">バイト代 <b id="job-earned"></b></p>
+      <button id="job-action" class="big wide"></button>
+      <div id="job-result" class="job-result" hidden></div>
+      <ul id="job-log" class="log"></ul>
     </section>
 
     <section class="panel ride-panel">

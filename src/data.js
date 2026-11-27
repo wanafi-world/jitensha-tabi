@@ -90,4 +90,11 @@ export const STARTER = {
   owned: ALL_ITEMS.filter((it) => it.price === 0).map((it) => it.id),
   bike: { frame: "giant-escape", wheels: "wh-rs100", tires: "pasela", group: "claris", bar: "flatbar", saddle: "velo" },
   outfit: { helmet: "kabuto", top: "tshirt", bottom: "shorts", shoes: "sneaker" },
+  followers: 0, // SNSのフォロワー
+  likes: 0, // これまでのいいね合計
+  earnings: 0, // SNSとバイトで稼いだ合計
+  posts: [], // SNSに投稿した写真（新しい順）
+  trips: [],
+  recycle: null, // リサイクルショップの品ぞろえ
+  day: 1, // 旅やバイトをすると1日進む
 };

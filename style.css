@@ -215,3 +215,43 @@ body[data-screen="ride"] .ride-panel { display: block; }
   .ov-photo p, .ov-flat p { display: none; }
   .ov-photo, .ov-flat { padding: 4px 6px; }
 }
+
+/* ---------- ナビ ---------- */
+.nav-bar { display: none; gap: 6px; padding: 8px 16px; overflow-x: auto; background: var(--paper); border-bottom: 3px solid var(--line); }
+.nav-bar button { flex: 0 0 auto; background: var(--bg); border: 2px solid var(--line); padding: 4px 10px; font-size: 14px; box-shadow: 2px 2px 0 var(--line); }
+.nav-bar button.active { background: var(--ink); color: var(--paper); }
+.nav-bar button.go { background: var(--accent); color: #fff; margin-left: auto; }
+body:is([data-screen="assemble"], [data-screen="outfit"], [data-screen="route"], [data-screen="shop"], [data-screen="recycle"], [data-screen="sns"], [data-screen="jobs"]) .nav-bar { display: flex; }
+@media (max-width: 760px) { .nav-bar { padding: 6px 12px; } .nav-bar button { font-size: 13px; padding: 3px 8px; } .nav-bar button.go { margin-left: 0; } }
+
+body[data-screen="shop"] .store-panel, body[data-screen="recycle"] .store-panel,
+body[data-screen="sns"] .sns-panel, body[data-screen="jobs"] .jobs-panel, body[data-screen="job"] .job-panel { display: block; }
+body[data-screen="job"] #scene { display: none; }
+body[data-screen="job"] #ride { display: block; }
+
+.big.wide { width: 100%; margin-top: 8px; }
+.state small { display: block; color: var(--good); font-size: 11px; }
+.lucky { color: #fff; background: var(--bad); font-weight: normal; padding: 0 4px; }
+.empty-note { color: var(--sub); font-size: 13px; padding: 8px; }
+
+/* ---------- SNS ---------- */
+.sns-head { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+.sns-head .avatar { width: 44px; height: 44px; border: 2px solid var(--line); background: radial-gradient(circle at 50% 40%, #f3c9a0 0 30%, #3a6fd8 31% 100%); image-rendering: pixelated; }
+.sns-head b { display: block; font-weight: normal; font-size: 16px; }
+.sns-head span { font-size: 12px; color: var(--sub); }
+.sns-nums { display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; border: 2px solid var(--line); background: #fff; margin-bottom: 8px; }
+.sns-nums div { padding: 6px; display: grid; }
+.sns-nums b { font-weight: normal; font-size: 18px; }
+.sns-nums span { font-size: 11px; color: var(--sub); }
+.timeline { max-height: 420px; overflow-y: auto; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+.timeline figcaption { display: grid; gap: 2px; padding-top: 4px; }
+.timeline figcaption b { font-weight: normal; }
+.timeline figcaption span { color: var(--sub); }
+.timeline figcaption em { font-style: normal; color: #d8417a; }
+
+/* ---------- バイト ---------- */
+.job-step { font-size: 15px; min-height: 2.6em; margin: 4px 0; }
+.job-result { border: 2px solid var(--line); background: #fff; padding: 10px; margin: 8px 0; text-align: center; }
+.job-result b { color: var(--accent); font-weight: normal; font-size: 18px; }
+.income b { color: var(--good); font-weight: normal; font-size: 18px; }
+#job-action { user-select: none; -webkit-user-select: none; touch-action: none; }

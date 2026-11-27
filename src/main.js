@@ -4,13 +4,15 @@ import { drawBike, drawRider, drawWorkshop, hitPart, slotRegions, GROUND, RIDER_
 import { loadState, saveState, resetState, computeStats, isComplete, STAT_LABELS } from "./state.js";
 import { ROUTES, routeById } from "./routes.js";
 import { RideScreen } from "./rideScreen.js";
+import { StoreScreen, renderSns } from "./store.js";
+import { JobScreen, JOBS } from "./jobs.js";
 
 const canvas = document.getElementById("scene");
 const p = new Pixel(canvas);
 const $ = (sel) => document.querySelector(sel);
 
 let state = loadState();
-let screen = "title"; // title | assemble | outfit | route | ride
+let screen = "title"; // title | assemble | outfit | route | ride | shop | recycle | sns | jobs | job
 let lastT = 0;
 let slot = "frame";
 let particles = [];
@@ -20,8 +22,10 @@ const yen = (n) => "¥" + n.toLocaleString("ja-JP");
 
 // ---------- 描画ループ ----------
 
+const withRider = () => !["title", "assemble"].includes(screen);
+
 function bikeOx() {
-  return screen === "outfit" || screen === "route" ? BIKE_OX_RIDER : BIKE_OX_ALONE;
+  return withRider() ? BIKE_OX_RIDER : BIKE_OX_ALONE;
 }
 
 function drawBrackets(r, c) {
@@ -42,13 +46,19 @@ function frame(t) {
     requestAnimationFrame(frame);
     return;
   }
+  if (screen === "job") {
+    jobScreen.frame(t, dt);
+    requestAnimationFrame(frame);
+    return;
+  }
   drawWorkshop(p, t);
-  const showRider = screen === "outfit" || screen === "route";
   const ox = bikeOx();
+  // ショップでは選んだ品物を試しに付けた姿を見せる
+  const look = screen === "shop" || screen === "recycle" ? store.maps() : state;
   // タイトル画面ではホイールがゆっくり回る
   const spin = screen === "title" ? t / 900 : 0;
-  drawBike(p, state.bike, { ox, spin, crank: screen === "title" ? t / 900 : 0.6 });
-  if (showRider) drawRider(p, state.outfit, RIDER_X, GROUND);
+  drawBike(p, look.bike, { ox, spin, crank: screen === "title" ? t / 900 : 0.6 });
+  if (withRider()) drawRider(p, look.outfit, RIDER_X, GROUND);
 
   if (screen === "assemble" && Math.floor(t / 400) % 2 === 0) {
     for (const r of slotRegions(slot, ox)) drawBrackets(r, "#e8622c");
@@ -80,9 +90,46 @@ function burst(regions, colors) {
 function setScreen(next) {
   screen = next;
   document.body.dataset.screen = next;
+  for (const b of document.querySelectorAll("#nav button")) b.classList.toggle("active", b.dataset.go === next);
+  $("#money").textContent = yen(state.money);
   if (next === "route") renderRoutes();
-  if (next !== "ride") render();
+  if (next === "shop" || next === "recycle") store.open(next, pendingShopItem);
+  pendingShopItem = null;
+  if (next === "sns") renderSns(state);
+  if (next === "jobs") renderJobs();
+  if (next === "assemble" || next === "outfit") render();
+  saveState(state);
 }
+
+let pendingShopItem = null;
+
+const store = new StoreScreen({
+  getState: () => state,
+  save: () => saveState(state),
+  toast: (m) => toast(m),
+  onChange: () => { prevStats = computeStats(state.bike, state.outfit); },
+});
+
+function renderJobs() {
+  const list = $("#jobs");
+  list.innerHTML = "";
+  for (const j of JOBS) {
+    const li = document.createElement("li");
+    li.className = "open";
+    li.innerHTML = `<b>${j.icon} ${j.name}</b><span>${j.pay}</span><span>${j.note}</span>`;
+    li.onclick = () => {
+      setScreen("job");
+      jobScreen.start(j.id, computeStats(state.bike, state.outfit));
+    };
+    list.appendChild(li);
+  }
+}
+
+const jobScreen = new JobScreen({
+  getState: () => state,
+  save: () => saveState(state),
+  onExit: () => setScreen("jobs"),
+});
 
 function renderRoutes() {
   const list = $("#routes");
@@ -149,7 +196,7 @@ function render() {
         <span class="name">${it.name}</span>
         <span class="note">${it.note}</span>
       </span>
-      <span class="state">${it.id === equipped ? "装着中" : owned ? "つける" : yen(it.price)}</span>`;
+      <span class="state">${it.id === equipped ? "装着中" : owned ? "つける" : `${yen(it.price)} ▶`}</span>`;
     li.onclick = () => equip(it, owned);
     list.appendChild(li);
   }
@@ -187,7 +234,8 @@ function render() {
 
 function equip(it, owned) {
   if (!owned) {
-    toast(`${it.brand} ${it.name} はショップで買えます（ステップ3でつくります）`);
+    pendingShopItem = it.id;
+    setScreen("shop");
     return;
   }
   const map = currentMap();
@@ -233,6 +281,16 @@ $("#remove").onclick = unequip;
 $("#back").onclick = () => setScreen("assemble");
 $("#next").onclick = () => setScreen(screen === "assemble" ? "outfit" : "route");
 $("#route-back").onclick = () => setScreen("outfit");
+for (const b of document.querySelectorAll("#nav button")) {
+  b.onclick = () => {
+    const go = b.dataset.go;
+    if (go === "route" && !(isComplete(state.bike, PART_SLOTS) && isComplete(state.outfit, OUTFIT_SLOTS))) {
+      toast("自転車と服をすべてそろえてから出発しよう");
+      return;
+    }
+    setScreen(go);
+  };
+}
 $("#reset").onclick = () => {
   state = resetState();
   prevStats = computeStats(state.bike, state.outfit);
@@ -244,4 +302,4 @@ document.fonts?.load('8px "DotGothic16"').finally(() => requestAnimationFrame(fr
 setScreen("title");
 
 // 確認用（ブラウザのコンソールから触れる）
-window.jitensha = { rideScreen, getState: () => state };
+window.jitensha = { rideScreen, jobScreen, store, getState: () => state };

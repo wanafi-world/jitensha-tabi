@@ -2,6 +2,7 @@
 import { Pixel } from "./pixel.js";
 import { Ride, MODES } from "./ride.js";
 import { reversed } from "./routes.js";
+import { followerBoost, postPhotos, LIKE_VALUE } from "./economy.js";
 import { drawRideScene, drawForeground, RW, RH, BIKE_X, ROAD_Y } from "./scenery.js";
 import { drawCyclist, geometry, GROUND } from "./draw.js";
 
@@ -49,7 +50,7 @@ export class RideScreen {
   start(route, stats) {
     this.stats = stats;
     this.route = route;
-    this.ride = new Ride(route, stats);
+    this.ride = new Ride(route, stats, { boost: followerBoost(this.getState().followers) });
     this.trip = { route, legs: [this.ride], rinko: 0 };
     this.hideOverlay();
     this.buildTicks();
@@ -201,8 +202,13 @@ export class RideScreen {
     drawCyclist(this.p, this.getState().bike, this.getState().outfit, { ox: OX, oy: OY, spin: r.spin, crank: r.crank });
     drawForeground(this.p, r, t);
     const img = this.canvas.toDataURL("image/png");
+    // SNSに残す小さい写真
+    const small = document.createElement("canvas");
+    small.width = RW / 2; small.height = RH / 2;
+    small.getContext("2d").drawImage(this.canvas, 0, 0, small.width, small.height);
     const photo = r.takePhoto(this.photoSpot, quality);
     photo.img = img;
+    photo.thumb = small.toDataURL("image/jpeg", 0.8);
     r.status = "shop"; // 結果を見ている間は止める
     this.flash = 1;
     const grade = quality > 0.9 ? "ピッタリ！" : quality > 0.6 ? "いい感じ" : "ちょっとブレた";
@@ -284,7 +290,7 @@ export class RideScreen {
         this.finish(false);
       };
       $("#ov-back").onclick = () => {
-        const back = new Ride(reversed(route), this.stats, { startMin: r.minutes, stamina: r.stamina });
+        const back = new Ride(reversed(route), this.stats, { startMin: r.minutes, stamina: r.stamina, boost: r.boost });
         back.mode = r.mode;
         this.ride = back;
         this.trip.legs.push(back);
@@ -309,7 +315,8 @@ export class RideScreen {
     const st = this.getState();
     st.trips = st.trips || [];
     st.trips.push({ route: this.route.id, km: Math.round(km * 10) / 10, minutes: Math.round(minutes), likes, photos: photos.length, quit, date: new Date().toISOString().slice(0, 10) });
-    st.likes = (st.likes || 0) + likes;
+    const posted = postPhotos(st, photos, this.route.name);
+    st.day += 1;
     this.save();
     this.ride.status = "goal";
     const hm = (m) => `${Math.floor(m / 60)}時間${Math.round(m % 60)}分`;
@@ -325,7 +332,8 @@ export class RideScreen {
       </dl>
       <div class="photos">${photos.map((ph) => `<figure><img src="${ph.img}" alt=""><figcaption>${esc(ph.spot)}<br>❤ ${ph.likes}</figcaption></figure>`).join("") || "<p>写真はありません</p>"}</div>
       <p class="likes">いいね合計 ❤ ${likes}</p>
-      <p class="sub-t">いいねはステップ3でお金に変わるようにします</p>
+      ${photos.length ? `<p class="income">SNSに投稿して <b>${yen(posted.income)}</b> の収入（1いいね ${LIKE_VALUE}円）</p>
+      <p class="sub-t">フォロワー +${posted.newFollowers}（合計 ${st.followers}）。フォロワーが増えると次から「いいね」が付きやすくなります</p>` : ""}
       <button class="big" id="ov-home">作業場にもどる</button></div>`);
     $("#ov-home").onclick = () => { this.hideOverlay(); this.ride = null; this.onExit(); };
   }
