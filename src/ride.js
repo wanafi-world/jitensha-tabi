@@ -9,7 +9,8 @@ export const MODES = {
 };
 
 export class Ride {
-  constructor(route, stats, { startMin = 9 * 60, stamina = 100, rng = Math.random } = {}) {
+  constructor(route, stats, { startMin = 9 * 60, stamina = 100, rng = Math.random, boost = 1 } = {}) {
+    this.boost = boost;
     this.route = route;
     this.stats = stats;
     this.rng = rng;
@@ -197,7 +198,7 @@ export class Ride {
     else if (h >= 5.5 && h < 8) { timeBonus = 1.3; timeLabel = "朝の光"; }
     else if (h >= 19 || h < 5) { timeBonus = 0.6; timeLabel = "夜"; }
     const base = 30 + this.stats.style * 2;
-    const likes = Math.max(1, Math.round(base * spot.fame * (0.3 + 0.7 * quality) * timeBonus * (0.85 + this.rng() * 0.3)));
+    const likes = Math.max(1, Math.round(base * this.boost * spot.fame * (0.3 + 0.7 * quality) * timeBonus * (0.85 + this.rng() * 0.3)));
     this.shotSpots.add(spot.name);
     const photo = { spot: spot.name, likes, quality, timeLabel, clock: this.clock() };
     this.photos.push(photo);
