@@ -126,3 +126,92 @@ body:not([data-screen="outfit"]) .when-outfit { display: none; }
 .routes li { border: 2px dashed var(--sub); padding: 8px; display: grid; gap: 2px; color: var(--sub); }
 .routes b { color: var(--ink); font-weight: normal; font-size: 15px; }
 .routes span { font-size: 12px; }
+
+/* ---------- ルート選択 ---------- */
+.routes li { position: relative; }
+.routes li.open { border: 2px solid var(--line); color: var(--ink); background: #fff; cursor: pointer; box-shadow: 3px 3px 0 var(--line); }
+.routes li.open:hover { background: #fff6e2; }
+.routes li.open span { color: var(--sub); }
+.routes em { position: absolute; right: 8px; top: 8px; font-style: normal; font-size: 11px; }
+
+/* ---------- 走行画面 ---------- */
+#ride {
+  display: none; width: 100%; height: auto; aspect-ratio: 480 / 270;
+  image-rendering: pixelated; image-rendering: crisp-edges;
+  border: 3px solid var(--line); background: #6fb6e6; touch-action: manipulation;
+}
+body[data-screen="ride"] #scene { display: none; }
+body[data-screen="ride"] #ride { display: block; }
+body[data-screen="ride"] .ride-panel { display: block; }
+
+.ride-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.ride-head b { font-size: 20px; font-weight: normal; }
+.ride-head span { font-size: 18px; color: var(--accent); }
+
+.progress { position: relative; height: 14px; border: 2px solid var(--line); background: #bfe0ee; }
+#r-bar { height: 100%; background: #2f7fd8; width: 0; }
+#r-ticks .tick { position: absolute; top: -2px; width: 3px; height: 14px; background: #f6efe0; transform: translateX(-1px); }
+.ride-ends { display: flex; justify-content: space-between; font-size: 12px; color: var(--sub); margin: 4px 0 10px; }
+
+.ride-stats { display: grid; gap: 6px; margin-bottom: 10px; }
+.ride-stats > div { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 8px; font-size: 14px; }
+.ride-stats b { font-weight: normal; }
+.ride-stats em { font-style: normal; font-size: 12px; color: var(--bad); }
+#r-stamina { display: block; height: 100%; background: var(--good); transition: width .2s; }
+#r-stamina.low { background: var(--bad); }
+.likes-mini { color: #d8417a; }
+
+.modes { display: flex; gap: 6px; margin-bottom: 10px; }
+.mode { flex: 1; }
+.mode.active { background: var(--ink); color: var(--paper); }
+
+.ride-actions { display: grid; gap: 8px; margin-bottom: 10px; }
+.ride-actions .big { width: 100%; font-size: 15px; }
+.big.alt { background: var(--good); }
+#r-photo { animation: pulse .8s steps(2) infinite; }
+@keyframes pulse { 50% { transform: translateY(-2px); } }
+
+.log { list-style: none; margin: 0; padding: 8px; background: var(--bg); border: 2px solid var(--line); min-height: 120px; font-size: 13px; display: grid; gap: 3px; align-content: start; }
+.log li span { color: var(--sub); margin-right: 8px; font-size: 11px; }
+.log li:first-child { color: var(--ink); }
+.log li:not(:first-child) { color: var(--sub); }
+
+/* ---------- 走行中のオーバーレイ ---------- */
+.overlay {
+  position: absolute; inset: 3px; display: flex; align-items: center; justify-content: center;
+  background: rgba(30, 20, 14, 0.45); z-index: 3; overflow-y: auto; padding: 10px;
+}
+.overlay[hidden] { display: none; }
+.overlay:not(.passthrough) { position: fixed; inset: 0; z-index: 10; padding: 16px; }
+.overlay.passthrough { background: none; align-items: flex-start; pointer-events: none; padding: 6px; }
+.overlay.passthrough > * { pointer-events: auto; }
+.ov-card { background: var(--paper); border: 3px solid var(--line); box-shadow: 4px 4px 0 var(--line); padding: 14px; width: min(440px, 100%); text-align: center; max-height: calc(100vh - 32px); overflow-y: auto; margin: auto; }
+.ov-card h3 { margin: 0 0 6px; font-size: 18px; font-weight: normal; }
+.ov-card p { margin: 6px 0; }
+.sub-t { font-size: 12px; color: var(--sub); }
+.ov-photo, .ov-flat { background: rgba(251, 245, 230, 0.92); border: 3px solid var(--line); padding: 6px 10px; text-align: center; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.ov-flat .meter { width: 120px; margin: 0; }
+.ov-photo p, .ov-flat p { margin: 0; font-size: 13px; }
+.ov-photo .big, .ov-flat .big { padding: 4px 12px; font-size: 15px; }
+.meter { height: 10px; border: 2px solid var(--line); background: var(--bg); margin-bottom: 8px; }
+.meter span { display: block; height: 100%; background: var(--accent); }
+.polaroid { display: inline-block; background: #fff; padding: 8px 8px 4px; border: 2px solid var(--line); transform: rotate(-2deg); box-shadow: 3px 3px 0 rgba(0,0,0,.2); }
+.polaroid img { display: block; width: min(320px, 70vw); image-rendering: pixelated; }
+.polaroid span { display: block; font-size: 13px; padding-top: 4px; }
+.grade { color: var(--accent); }
+.likes { color: #d8417a; font-size: 18px; }
+.menu { list-style: none; padding: 0; margin: 10px 0; display: grid; gap: 6px; }
+.menu button, .choice { width: 100%; display: grid; gap: 2px; text-align: left; padding: 8px 10px; }
+.menu button span, .choice span { font-size: 12px; color: var(--sub); }
+.menu button b, .choice b { font-weight: normal; font-size: 15px; }
+.choices { display: grid; gap: 8px; margin-top: 8px; }
+.result dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; text-align: left; font-size: 14px; margin: 8px 0; }
+.result dt { color: var(--sub); }
+.result dd { margin: 0; }
+.photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; margin: 8px 0; }
+.photos figure { margin: 0; background: #fff; border: 2px solid var(--line); padding: 4px; font-size: 11px; }
+.photos img { width: 100%; display: block; image-rendering: pixelated; }
+@media (max-width: 760px) {
+  .ov-photo p, .ov-flat p { display: none; }
+  .ov-photo, .ov-flat { padding: 4px 6px; }
+}
