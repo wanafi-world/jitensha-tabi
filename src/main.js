@@ -2,13 +2,16 @@ import { PART_SLOTS, OUTFIT_SLOTS, ALL_ITEMS, itemById } from "./data.js";
 import { Pixel } from "./pixel.js";
 import { drawBike, drawRider, drawWorkshop, hitPart, slotRegions, GROUND, RIDER_X, BIKE_OX_ALONE, BIKE_OX_RIDER } from "./draw.js";
 import { loadState, saveState, resetState, computeStats, isComplete, STAT_LABELS } from "./state.js";
+import { ROUTES, routeById } from "./routes.js";
+import { RideScreen } from "./rideScreen.js";
 
 const canvas = document.getElementById("scene");
 const p = new Pixel(canvas);
 const $ = (sel) => document.querySelector(sel);
 
 let state = loadState();
-let screen = "title"; // title | assemble | outfit | route
+let screen = "title"; // title | assemble | outfit | route | ride
+let lastT = 0;
 let slot = "frame";
 let particles = [];
 let prevStats = computeStats(state.bike, state.outfit);
@@ -31,6 +34,14 @@ function drawBrackets(r, c) {
 }
 
 function frame(t) {
+  const dt = lastT ? (t - lastT) / 1000 : 0;
+  lastT = t;
+  if (screen === "ride") {
+    rideScreen.frame(t, dt);
+    rideScreen.checkFlat();
+    requestAnimationFrame(frame);
+    return;
+  }
   drawWorkshop(p, t);
   const showRider = screen === "outfit" || screen === "route";
   const ox = bikeOx();
@@ -69,8 +80,34 @@ function burst(regions, colors) {
 function setScreen(next) {
   screen = next;
   document.body.dataset.screen = next;
-  render();
+  if (next === "route") renderRoutes();
+  if (next !== "ride") render();
 }
+
+function renderRoutes() {
+  const list = $("#routes");
+  list.innerHTML = "";
+  for (const r of ROUTES) {
+    const li = document.createElement("li");
+    li.className = r.available ? "open" : "";
+    li.innerHTML = `<b>${r.name}</b><span>${r.summary}</span>${r.available ? "" : "<em>準備中</em>"}`;
+    if (r.available) li.onclick = () => startRide(r.id);
+    list.appendChild(li);
+  }
+  const trips = state.trips || [];
+  $("#trip-count").textContent = trips.length ? `これまでの旅 ${trips.length} 回・いいね合計 ❤ ${state.likes || 0}` : "";
+}
+
+function startRide(id) {
+  setScreen("ride");
+  rideScreen.start(routeById(id), computeStats(state.bike, state.outfit));
+}
+
+const rideScreen = new RideScreen({
+  getState: () => state,
+  save: () => saveState(state),
+  onExit: () => setScreen("assemble"),
+});
 
 function slotsForScreen() {
   return screen === "outfit" ? OUTFIT_SLOTS : PART_SLOTS;
@@ -205,3 +242,6 @@ $("#reset").onclick = () => {
 
 document.fonts?.load('8px "DotGothic16"').finally(() => requestAnimationFrame(frame));
 setScreen("title");
+
+// 確認用（ブラウザのコンソールから触れる）
+window.jitensha = { rideScreen, getState: () => state };

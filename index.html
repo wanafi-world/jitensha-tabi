@@ -18,6 +18,8 @@
   <main class="layout">
     <section class="stage">
       <canvas id="scene" width="320" height="180" aria-label="自転車の組み立て画面"></canvas>
+      <canvas id="ride" width="480" height="270" aria-label="走行画面"></canvas>
+      <div id="overlay" class="overlay" hidden></div>
       <div id="toast" class="toast" role="status"></div>
 
       <div class="title-overlay">
@@ -48,15 +50,28 @@
 
     <section class="panel route-panel">
       <h2 class="screen-title">ルートをえらぶ</h2>
-      <p class="tip">走行画面はステップ2でつくります。最初はしまなみ海道から。</p>
-      <ul class="routes">
-        <li><b>しまなみ海道</b><span>尾道 → 今治・約70km・直進（往復／輪行）</span></li>
-        <li><b>ビワイチ</b><span>琵琶湖一周・約200km・周回</span></li>
-        <li><b>つくば霞ヶ浦りんりんロード</b><span>霞ヶ浦一周・約90km・周回</span></li>
-        <li><b>富士五湖めぐり</b><span>五湖をつなぐ・約100km・周回</span></li>
-        <li><b>東京 → 箱根</b><span>国道1号・約90km・直進（往復／輪行）</span></li>
-      </ul>
+      <p class="tip">走りたいルートを選んでください。</p>
+      <ul id="routes" class="routes"></ul>
+      <p id="trip-count" class="tip"></p>
       <button id="route-back" class="sub">◀ もどる</button>
+    </section>
+
+    <section class="panel ride-panel">
+      <div class="ride-head"><b id="r-place"></b><span id="r-clock"></span></div>
+      <div class="progress"><div id="r-bar"></div><div id="r-ticks"></div></div>
+      <div class="ride-ends"><span id="r-from"></span><span id="r-km"></span><span id="r-to"></span></div>
+      <div class="ride-stats">
+        <div><span class="label">速さ</span><b id="r-speed"></b><em id="r-slope"></em></div>
+        <div><span class="label">体力</span><span class="bar"><span id="r-stamina"></span></span><b id="r-stamina-val"></b></div>
+        <div><span class="label">所持金</span><b id="r-money"></b><b id="r-likes" class="likes-mini"></b></div>
+      </div>
+      <div id="r-modes" class="modes"></div>
+      <div class="ride-actions">
+        <button id="r-photo" class="big" hidden></button>
+        <button id="r-shop" class="big alt" hidden></button>
+      </div>
+      <ul id="r-log" class="log"></ul>
+      <button id="r-quit" class="link">今日はここで終わりにする</button>
     </section>
   </main>
 

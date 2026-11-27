@@ -603,3 +603,112 @@ export function drawWorkshop(p, t) {
   p.disc(16, 152, 4, "#f6efe0"); p.px(16, 150, "#c8282e");
   p.line(18, 132, 26, 160, "#2b2b2b");
 }
+
+// ---------- 走っている人と自転車 ----------
+
+// 2本の骨（長さ L1, L2）で a から b に届く関節の位置。bend = 1 で前側、-1 で後ろ側に曲がる
+function joint(a, b, L1, L2, bend) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  let d = Math.hypot(dx, dy);
+  const maxD = L1 + L2 - 0.01;
+  if (d > maxD) d = maxD;
+  const th = Math.atan2(dy, dx);
+  const cosA = (L1 * L1 + d * d - L2 * L2) / (2 * L1 * d);
+  const A = Math.acos(Math.max(-1, Math.min(1, cosA)));
+  const ang = th - bend * A;
+  return { x: a.x + Math.cos(ang) * L1, y: a.y + Math.sin(ang) * L1 };
+}
+
+function drawLeg(p, hip, foot, outfit, far) {
+  const bottom = itemById(outfit.bottom), shoes = itemById(outfit.shoes);
+  const dk = (c) => (far ? shade(c, -0.3) : c);
+  const knee = joint(hip, foot, 46, 46, 1);
+  const short = bottom?.id === "shorts" ? 0.7 : 0.6;
+  const bc = bottom ? bottom.colors : [GHOST, GHOST];
+  const kneeShort = lerp(hip, knee, short);
+  // 太もも
+  p.tube(hip, knee, 8, dk(SKIN));
+  p.tube(hip, kneeShort, 11, dk(bc[0]));
+  if (bc[1] !== bc[0]) { const q = lerp(hip, knee, short - 0.04); p.line(q.x - 3, q.y - 3, q.x + 3, q.y + 3, dk(bc[1]), 2); }
+  // すね
+  p.tube(knee, foot, 7, dk(SKIN));
+  const sock = lerp(knee, foot, 0.8);
+  p.tube(sock, foot, 7, dk("#f2efe6"));
+  p.disc(knee.x, knee.y, 4, dk(SKIN));
+  // くつ
+  const sc = shoes ? shoes.colors : [GHOST, GHOST];
+  p.rect(foot.x - 6, foot.y - 4, 13, 5, dk(sc[0]));
+  p.rect(foot.x - 6, foot.y - 4, 13, 1, dk(shade(sc[0], 0.35)));
+  p.rect(foot.x - 6, foot.y + 1, 13, 1, dk("#1a1a1a"));
+  p.rect(foot.x - 2, foot.y - 3, 5, 1, dk(sc[1]));
+}
+
+// 自転車にまたがって走る人。far leg → 自転車 → 体・腕・手前の脚の順に重ねる
+export function drawCyclist(p, bike, outfit, { ox = 0, oy = 0, spin = 0, crank = 0, bob = 0, tired = false } = {}) {
+  const g = geometry(ox, oy);
+  const bar = itemById(bike.bar);
+  const shape = bar ? bar.shape : "flat";
+  const pedal = (a) => ({ x: g.BB.x + Math.cos(a) * 15, y: g.BB.y + Math.sin(a) * 15 - 2 });
+  const hip = { x: g.SP.x - 3, y: g.SP.y - 7 + bob };
+
+  drawLeg(p, hip, pedal(crank + Math.PI), outfit, true);
+  drawBike(p, bike, { ox, oy, spin, crank });
+
+  const top = itemById(outfit.top), helmet = itemById(outfit.helmet);
+  const tc = top ? top.colors : [GHOST, GHOST];
+  const lean = shape === "drop" ? { x: 36, y: -30 } : shape === "bullhorn" ? { x: 33, y: -33 } : { x: 25, y: -39 };
+  if (tired) { lean.y += 4; }
+  const sh = { x: hip.x + lean.x, y: hip.y + lean.y };
+  const hand = shape === "drop" ? { x: g.STEM.x + 8, y: g.STEM.y - 5 }
+    : shape === "bullhorn" ? { x: g.STEM.x + 12, y: g.STEM.y - 3 } : { x: g.STEM.x + 5, y: g.STEM.y - 3 };
+
+  // 体
+  p.tube(hip, sh, 16, tc[0]);
+  const chest = lerp(hip, sh, 0.62);
+  if (tc[1] !== tc[0]) p.tube(lerp(hip, sh, 0.55), lerp(hip, sh, 0.7), 16, tc[1]);
+  if (top?.id !== "tshirt") { // 背中のポケット
+    const bp = lerp(hip, sh, 0.18);
+    p.rect(bp.x - 9, bp.y - 4, 5, 6, shade(tc[0], -0.25));
+  }
+  p.px(chest.x + 6, chest.y + 4, shade(tc[0], 0.4));
+
+  // 手前の脚
+  drawLeg(p, hip, pedal(crank), outfit, false);
+
+  // うで
+  const elbow = joint(sh, hand, 22, 22, -1);
+  p.tube(sh, lerp(sh, elbow, 0.55), 7, tc[0]);
+  p.tube(lerp(sh, elbow, 0.5), elbow, 6, SKIN);
+  p.tube(elbow, hand, 5, SKIN);
+  p.disc(hand.x, hand.y, 3, top?.id === "tshirt" ? SKIN : "#2a2a2a");
+
+  // くびとあたま
+  const head = { x: sh.x + (shape === "drop" ? 11 : 7), y: sh.y - 13 };
+  p.tube(sh, { x: head.x - 3, y: head.y + 6 }, 6, SKIN_D);
+  p.disc(head.x, head.y, 10, SKIN);
+  p.rect(head.x - 10, head.y - 4, 7, 9, "#3b2a20"); // うしろ髪
+  p.rect(head.x - 3, head.y, 3, 5, SKIN_D); // みみ
+  p.rect(head.x + 5, head.y - 1, 2, 3, OUTLINE); // め
+  p.px(head.x + 5, head.y - 1, "#ffffff");
+  p.rect(head.x + 4, head.y - 4, 4, 1, "#3b2a20"); // まゆ
+  p.rect(head.x + 4, head.y + 6, 3, 1, "#a4553f"); // くち
+  p.rect(head.x + 3, head.y + 2, 3, 2, "#f2a08a"); // ほっぺ
+  p.px(head.x + 10, head.y + 2, SKIN_D); // はな
+  if (tired) { p.rect(head.x - 6, head.y - 14, 2, 3, "#6fc3e8"); p.px(head.x - 6, head.y - 15, "#6fc3e8"); }
+  if (helmet) {
+    const [h0, h1] = helmet.colors;
+    for (let i = 0; i < 9; i++) {
+      const w = Math.round(Math.sqrt(1 - ((i - 8) / 9) ** 2) * 13);
+      p.rect(head.x - w - 1, head.y - 12 + i, w * 2 + 2, 1, h0);
+    }
+    p.rect(head.x - 9, head.y - 12, 10, 1, shade(h0, 0.5));
+    p.rect(head.x - 13, head.y - 4, 26, 1, shade(h0, -0.35));
+    for (const vx of [-7, -2, 3]) p.rect(head.x + vx, head.y - 9, 3, 2, OUTLINE);
+    p.rect(head.x - 12, head.y - 6, 24, 1, h1);
+    p.line(head.x - 1, head.y - 4, head.x + 3, head.y + 7, "#2a2a2a");
+    if (helmet.id === "kask") { p.rect(head.x + 2, head.y - 2, 9, 3, "#222"); p.rect(head.x + 5, head.y - 1, 4, 1, "#6fc3e8"); }
+    if (helmet.id === "giro") p.rect(head.x + 9, head.y - 5, 5, 2, "#1f1f1f");
+  } else {
+    p.rect(head.x - 9, head.y - 10, 18, 6, "#3b2a20");
+  }
+}
